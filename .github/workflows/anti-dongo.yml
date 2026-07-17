@@ -1,0 +1,19 @@
+name: anti-dongo-notif
+on:
+  schedule:
+    - cron: "*/30 0-16 * * *"   # tiap 30 menit, 07:00-23:00 WIB
+  workflow_dispatch: {}
+jobs:
+  notif:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install googleapis
+      - run: node send-notif.js
+        env:
+          GCAL_SA_KEY: ${{ secrets.GCAL_SA_KEY }}
+          GCAL_ID: ${{ secrets.GCAL_ID }}
+          NTFY_URL: ${{ secrets.NTFY_URL }}
