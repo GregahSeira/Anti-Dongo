@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 
-const CAL_ID = process.env.GCAL_ID;
-const NTFY_URL = process.env.NTFY_URL;
+const CAL_ID = (process.env.GCAL_ID || '').trim();
+const NTFY_URL = (process.env.NTFY_URL || '').trim();
 const SA_KEY = JSON.parse(process.env.GCAL_SA_KEY);
 
 const WINDOW_MIN = 35;
