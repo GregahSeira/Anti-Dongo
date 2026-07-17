@@ -4,7 +4,7 @@ const CAL_ID = process.env.GCAL_ID;
 const NTFY_URL = process.env.NTFY_URL;
 const SA_KEY = JSON.parse(process.env.GCAL_SA_KEY);
 
-const WINDOW_MIN = 35; // seberapa mundur kita cek notif yang baru due
+const WINDOW_MIN = 35;
 
 async function main() {
   const auth = new google.auth.GoogleAuth({
@@ -12,6 +12,19 @@ async function main() {
     scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
   });
   const calendar = google.calendar({ version: 'v3', auth });
+
+  // diagnostik: siapa gw, nuju ke mana
+  console.log(`robot: ${SA_KEY.client_email}`);
+  console.log(`target cal: @${CAL_ID.split('@')[1] || '(bukan format email)'}`);
+
+  try {
+    const meta = await calendar.calendars.get({ calendarId: CAL_ID });
+    console.log(`cal check: OK, timezone ${meta.data.timeZone}`);
+  } catch (e) {
+    console.log(`cal check: GAGAL, code ${e.code}`);
+    console.log('artinya: GCAL_ID salah, atau kalender belum ke-share ke robot ini');
+    process.exit(1);
+  }
 
   const now = new Date();
   const timeMin = new Date(now.getTime() - WINDOW_MIN * 60 * 1000);
@@ -26,17 +39,15 @@ async function main() {
   });
 
   const events = res.data.items || [];
-  console.log(`window ${WINDOW_MIN}m on ${CAL_ID}, ${events.length} event in window`);
+  console.log(`window ${WINDOW_MIN}m, ${events.length} event in window`);
+  for (const ev of events) {
+    console.log(`- "${ev.summary || '(judul kesembunyiin, cuma free/busy)'}" @ ${ev.start && (ev.start.dateTime || ev.start.date)}`);
+  }
 
   let sent = 0;
   for (const ev of events) {
     const title = ev.summary || '';
-    if (!title.includes('ANTI DONGO')) continue; // skip DUMP & ✅ log
-
-    const startStr = ev.start && (ev.start.dateTime || ev.start.date);
-    if (!startStr) continue;
-    const start = new Date(startStr);
-    if (start < timeMin || start > timeMax) continue; // cuma yang baru due
+    if (!title.includes('ANTI DONGO')) continue;
 
     const desc = ev.description || '';
     const m = desc.match(/prio\s*=\s*(\w+)/i);
