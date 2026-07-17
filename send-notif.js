@@ -21,14 +21,14 @@ async function main() {
     calendarId: CAL_ID,
     timeMin: timeMin.toISOString(),
     timeMax: timeMax.toISOString(),
-    q: 'ANTI DONGO',
     singleEvents: true,
     orderBy: 'startTime',
   });
 
   const events = res.data.items || [];
-  let sent = 0;
+  console.log(`window ${WINDOW_MIN}m on ${CAL_ID}, ${events.length} event in window`);
 
+  let sent = 0;
   for (const ev of events) {
     const title = ev.summary || '';
     if (!title.includes('ANTI DONGO')) continue; // skip DUMP & ✅ log
@@ -42,16 +42,16 @@ async function main() {
     const m = desc.match(/prio\s*=\s*(\w+)/i);
     const priority = m ? m[1].toLowerCase() : 'high';
 
-    await fetch(NTFY_URL, {
+    const r = await fetch(NTFY_URL, {
       method: 'POST',
       body: title,
       headers: { Title: 'Anti Dongo', Priority: priority, Tags: 'rotating_light' },
     });
+    console.log(`sent "${title}" [${priority}] -> ntfy ${r.status}`);
     sent++;
-    console.log(`sent: ${title} [${priority}]`);
   }
 
-  console.log(`done. window ${WINDOW_MIN}m, matched ${events.length}, sent ${sent}`);
+  console.log(`done. matched & sent ${sent}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
